@@ -127,7 +127,7 @@ const Inventory = () => {
                 </div>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os status</SelectItem>
+                <SelectItem value="all">Todos os status</SelectItem>
                 {Object.values(ItemStatus).map((status) => (
                   <SelectItem key={status} value={status}>
                     {status}

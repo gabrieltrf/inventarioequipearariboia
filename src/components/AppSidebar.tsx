@@ -61,9 +61,11 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
-                    active={location.pathname === item.url}
                   >
-                    <Link to={item.url} className="flex items-center">
+                    <Link 
+                      to={item.url} 
+                      className={`flex items-center ${location.pathname === item.url ? 'text-primary font-medium' : ''}`}
+                    >
                       <item.icon className="mr-2 h-5 w-5" />
                       <span>{item.title}</span>
                     </Link>

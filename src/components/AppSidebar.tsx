@@ -1,3 +1,4 @@
+
 import {
   Sidebar,
   SidebarContent,
@@ -10,18 +11,16 @@ import {
   SidebarMenuItem,
   SidebarFooter
 } from "@/components/ui/sidebar";
-import { Package, ArrowRightLeft, Calendar, BarChart3, Users, Moon, Sun, Bell } from "lucide-react";
+import { Package, ArrowRightLeft, Calendar, BarChart3, Moon, Sun, Bell } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { useInventory } from "@/contexts/InventoryContext";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
 import { toast } from "@/hooks/use-toast";
 import { useNotifications } from "@/contexts/NotificationsContext";
+import { useInventory } from "@/contexts/InventoryContext";
 
 export function AppSidebar() {
-  const { currentUser, users, setUser } = useInventory();
+  const { currentUser } = useInventory();
   const { unreadCount } = useNotifications();
   const { theme, setTheme } = useTheme();
   const location = useLocation();
@@ -117,30 +116,7 @@ export function AppSidebar() {
         </SidebarGroup>
         
         <SidebarGroup className="mt-auto">
-          <SidebarGroupLabel>Administração</SidebarGroupLabel>
           <SidebarGroupContent>
-            <div className="px-4 py-2">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="h-4 w-4" aria-hidden="true" />
-                <Label htmlFor="user-select">Usuário</Label>
-              </div>
-              <Select
-                value={currentUser.id}
-                onValueChange={(value) => setUser(value)}
-              >
-                <SelectTrigger id="user-select" className="w-full">
-                  <SelectValue placeholder="Selecionar usuário" />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} ({user.role === 'admin' ? 'Admin' : 'Membro'})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
             <div className="px-4 py-2 flex justify-between items-center">
               <div className="flex items-center gap-2">
                 {theme === "dark" ? (
@@ -148,7 +124,7 @@ export function AppSidebar() {
                 ) : (
                   <Sun className="h-4 w-4" aria-hidden="true" />
                 )}
-                <Label>Tema</Label>
+                <span>Tema</span>
               </div>
               <Button 
                 variant="ghost" 

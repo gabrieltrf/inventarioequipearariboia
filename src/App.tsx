@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +9,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { InventoryProvider } from "@/contexts/InventoryContext";
+import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { ThemeProvider } from "@/hooks/use-theme";
 
 // Páginas
@@ -25,28 +27,30 @@ const App = () => (
     <ThemeProvider defaultTheme="light">
       <TooltipProvider>
         <InventoryProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <SidebarProvider>
-              <div className="min-h-screen flex w-full">
-                <AppSidebar />
-                <div className="flex-1 relative">
-                  <div className="sticky top-0 left-0 right-0 bg-background/75 backdrop-blur-sm z-10 py-3 px-4 border-b">
-                    <SidebarTrigger />
+          <NotificationsProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <SidebarProvider>
+                <div className="min-h-screen flex w-full">
+                  <AppSidebar />
+                  <div className="flex-1 relative">
+                    <div className="sticky top-0 left-0 right-0 bg-background/75 backdrop-blur-sm z-10 py-3 px-4 border-b">
+                      <SidebarTrigger />
+                    </div>
+                    <Routes>
+                      <Route path="/" element={<Inventory />} />
+                      <Route path="/emprestimos" element={<Loans />} />
+                      <Route path="/movimentacoes" element={<Movements />} />
+                      <Route path="/relatorios" element={<Reports />} />
+                      <Route path="/notificacoes" element={<Notifications />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
                   </div>
-                  <Routes>
-                    <Route path="/" element={<Inventory />} />
-                    <Route path="/emprestimos" element={<Loans />} />
-                    <Route path="/movimentacoes" element={<Movements />} />
-                    <Route path="/relatorios" element={<Reports />} />
-                    <Route path="/notificacoes" element={<Notifications />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
                 </div>
-              </div>
-            </SidebarProvider>
-          </BrowserRouter>
+              </SidebarProvider>
+            </BrowserRouter>
+          </NotificationsProvider>
         </InventoryProvider>
       </TooltipProvider>
     </ThemeProvider>

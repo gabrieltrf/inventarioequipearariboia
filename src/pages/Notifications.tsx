@@ -1,196 +1,113 @@
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
-import { Bell, CheckCircle, Calendar, AlertTriangle, Package, ArrowRightLeft, Info } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import React from 'react';
+import { useNotifications } from '@/contexts/NotificationsContext';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Notification } from '@/contexts/InventoryContextExtension';
-
-// Dados de exemplo para notificações (até integrarmos ao contexto)
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'estoque_baixo',
-    title: 'Estoque baixo',
-    itemName: 'Laptop Dell XPS',
-    itemId: '123',
-    message: 'O estoque está abaixo do limite mínimo (apenas 2 unidades)',
-    date: new Date(2023, 4, 15),
-    read: false,
-    actionLink: '/'
-  },
-  {
-    id: '2',
-    type: 'emprestimo',
-    title: 'Novo empréstimo',
-    itemName: 'Projetor Sony',
-    itemId: '456',
-    message: 'Empréstimo realizado para Maria Silva',
-    date: new Date(2023, 4, 14),
-    read: true,
-    actionLink: '/emprestimos'
-  },
-  {
-    id: '3',
-    type: 'devolucao_atrasada',
-    title: 'Devolução atrasada',
-    itemName: 'Câmera Canon EOS',
-    itemId: '789',
-    message: 'O item deveria ter sido devolvido há 3 dias',
-    date: new Date(2023, 4, 10),
-    read: false,
-    actionLink: '/emprestimos'
-  },
-  {
-    id: '4',
-    type: 'movimentacao',
-    title: 'Entrada de estoque',
-    itemName: 'Mouse Logitech',
-    itemId: '101',
-    message: 'Adicionadas 10 unidades ao estoque',
-    date: new Date(2023, 4, 8),
-    read: true,
-    actionLink: '/movimentacoes'
-  }
-];
+import { Bell, CheckCircle2, AlertCircle, ArrowRight, Package } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Link } from 'react-router-dom';
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
-
-  const markNotificationAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(notif => 
-        notif.id === id ? { ...notif, read: true } : notif
-      )
-    );
-  };
-
-  const markAllNotificationsAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notif => ({ ...notif, read: true }))
-    );
-  };
+  const { notifications, markAsRead, markAllAsRead } = useNotifications();
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'emprestimo':
-        return <Calendar className="h-5 w-5 text-blue-500" aria-hidden="true" />;
+        return <ArrowRight className="h-5 w-5 text-blue-500" />;
       case 'devolucao_atrasada':
-        return <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />;
+        return <AlertCircle className="h-5 w-5 text-red-500" />;
       case 'estoque_baixo':
-        return <Package className="h-5 w-5 text-amber-500" aria-hidden="true" />;
+        return <Package className="h-5 w-5 text-amber-500" />;
       case 'movimentacao':
-        return <ArrowRightLeft className="h-5 w-5 text-green-500" aria-hidden="true" />;
+        return <ArrowRight className="h-5 w-5 text-green-500" />;
       default:
-        return <Info className="h-5 w-5 text-blue-500" aria-hidden="true" />;
+        return <Bell className="h-5 w-5 text-gray-500" />;
     }
   };
 
-  const filteredNotifications = notifications?.filter(notification => 
-    filter === 'all' || (filter === 'unread' && !notification.read)
-  ) || [];
-
-  const unreadCount = notifications?.filter(n => !n.read).length || 0;
+  const getNotificationColor = (type: string) => {
+    switch (type) {
+      case 'emprestimo':
+        return 'border-l-4 border-l-blue-500';
+      case 'devolucao_atrasada':
+        return 'border-l-4 border-l-red-500';
+      case 'estoque_baixo':
+        return 'border-l-4 border-l-amber-500';
+      case 'movimentacao':
+        return 'border-l-4 border-l-green-500';
+      default:
+        return 'border-l-4 border-l-gray-500';
+    }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-4 max-w-4xl">
-      <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-        <div className="flex items-center gap-2">
-          <Bell className="h-6 w-6" aria-hidden="true" />
-          <h1 className="text-2xl font-bold">Notificações</h1>
-          {unreadCount > 0 && (
-            <Badge variant="destructive" className="ml-2">{unreadCount} não lidas</Badge>
-          )}
-        </div>
-        <div className="flex gap-2 mt-4 md:mt-0">
-          <Button 
-            variant={filter === 'all' ? 'default' : 'outline'} 
-            onClick={() => setFilter('all')}
-            aria-pressed={filter === 'all'}
-          >
-            Todas
-          </Button>
-          <Button 
-            variant={filter === 'unread' ? 'default' : 'outline'} 
-            onClick={() => setFilter('unread')}
-            aria-pressed={filter === 'unread'}
-          >
-            Não lidas
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={markAllNotificationsAsRead}
-            disabled={unreadCount === 0}
-            aria-label="Marcar todas como lidas"
-          >
-            <CheckCircle className="h-4 w-4 mr-1" aria-hidden="true" /> Marcar todas como lidas
-          </Button>
-        </div>
+    <div className="container py-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Notificações</h1>
+        <Button variant="outline" onClick={markAllAsRead}>
+          Marcar todas como lidas
+        </Button>
       </div>
 
-      <div className="space-y-4">
-        {filteredNotifications.length > 0 ? (
-          filteredNotifications.map((notification) => (
+      {notifications.length === 0 ? (
+        <div className="text-center py-10">
+          <Bell className="mx-auto h-10 w-10 text-muted-foreground" />
+          <h2 className="mt-2 text-xl font-semibold">Sem notificações</h2>
+          <p className="text-muted-foreground">
+            Você não tem nenhuma notificação no momento.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {notifications.map((notification) => (
             <Card 
               key={notification.id} 
-              className={`transition-colors ${!notification.read ? 'bg-muted/50 border-l-4 border-l-primary' : ''}`}
+              className={`${getNotificationColor(notification.type)} ${!notification.read ? 'bg-accent/10' : ''}`}
             >
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
+              <CardHeader className="py-3">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-base font-medium flex items-center gap-2">
                     {getNotificationIcon(notification.type)}
-                    <CardTitle className="text-base">{notification.title}</CardTitle>
-                  </div>
-                  <Badge variant="outline">
-                    {formatDistanceToNow(notification.date, { addSuffix: true, locale: ptBR })}
-                  </Badge>
+                    {notification.title}
+                    {!notification.read && (
+                      <Badge variant="secondary" className="ml-2">
+                        Nova
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <span className="text-xs text-muted-foreground">
+                    {format(notification.date, 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                  </span>
                 </div>
-                <CardDescription>{notification.itemName}</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="py-2">
                 <p>{notification.message}</p>
               </CardContent>
-              <CardFooter>
-                {!notification.read ? (
+              <CardFooter className="py-2 flex justify-end gap-2">
+                {!notification.read && (
                   <Button 
                     variant="ghost" 
-                    size="sm" 
-                    onClick={() => markNotificationAsRead(notification.id)}
-                    aria-label="Marcar como lida"
+                    size="sm"
+                    onClick={() => markAsRead(notification.id)}
                   >
-                    <CheckCircle className="h-4 w-4 mr-1" aria-hidden="true" /> Marcar como lida
+                    <CheckCircle2 className="h-4 w-4 mr-1" />
+                    Marcar como lida
                   </Button>
-                ) : (
-                  <Badge variant="outline" className="bg-muted/30">Lida</Badge>
                 )}
                 {notification.actionLink && (
-                  <Button 
-                    variant="link" 
-                    asChild 
-                    className="ml-auto"
-                    aria-label={`Ver detalhes de ${notification.itemName}`}
-                  >
-                    <a href={notification.actionLink}>Ver detalhes</a>
+                  <Button variant="secondary" size="sm" asChild>
+                    <Link to={notification.actionLink}>
+                      Ver detalhes
+                    </Link>
                   </Button>
                 )}
               </CardFooter>
             </Card>
-          ))
-        ) : (
-          <div className="text-center py-12 border rounded-lg bg-muted/20">
-            <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-3" aria-hidden="true" />
-            <h2 className="text-xl font-medium mb-1">Sem notificações</h2>
-            <p className="text-muted-foreground">
-              {filter === 'all' 
-                ? 'Você não tem notificações no momento.' 
-                : 'Você não tem notificações não lidas no momento.'}
-            </p>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

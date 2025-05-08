@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Item, ItemCategory, ItemStatus } from '@/types';
 import { useState, useEffect } from 'react';
 import { useInventory } from '@/contexts/InventoryContext';
+import { toast } from 'sonner';
+import { FileIcon, Upload, X } from 'lucide-react';
 
 interface ItemFormProps {
   initialItem?: Item;
@@ -27,12 +29,26 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
     unit: initialItem?.unit || 'unidade',
     location: initialItem?.location || '',
     status: initialItem?.status || ItemStatus.AVAILABLE,
-    imageUrl: initialItem?.imageUrl || ''
+    imageUrl: initialItem?.imageUrl || '',
+    documents: initialItem?.documents || []
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<{ name: string, url: string, type: string }[]>([]);
+  
+  // Processar arquivos iniciais se existirem
+  useEffect(() => {
+    if (initialItem?.documents?.length) {
+      setPreviews(initialItem.documents.map(doc => ({
+        name: doc.name,
+        url: doc.url,
+        type: doc.type
+      })));
+    }
+  }, [initialItem]);
 
-  const handleChange = (field: string, value: string | number) => {
+  const handleChange = (field: string, value: string | number | any[]) => {
     setForm(prev => ({ ...prev, [field]: value }));
     // Limpar erro do campo quando for alterado
     if (errors[field]) {
@@ -41,6 +57,49 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
         delete newErrors[field];
         return newErrors;
       });
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const fileArray = Array.from(files);
+      setSelectedFiles(prev => [...prev, ...fileArray]);
+      
+      // Criar previews para os arquivos
+      fileArray.forEach(file => {
+        // Determinar tipo de arquivo (imagem, pdf, outros)
+        const fileType = file.type.split('/')[0] === 'image' 
+          ? 'image' 
+          : file.type === 'application/pdf' 
+            ? 'pdf' 
+            : 'document';
+        
+        // Criar URL para preview se for imagem
+        let previewUrl = '';
+        if (fileType === 'image') {
+          previewUrl = URL.createObjectURL(file);
+        }
+        
+        setPreviews(prev => [...prev, {
+          name: file.name,
+          url: previewUrl,
+          type: fileType
+        }]);
+      });
+    }
+  };
+
+  const removeFile = (index: number) => {
+    const newPreviews = [...previews];
+    newPreviews.splice(index, 1);
+    setPreviews(newPreviews);
+    
+    // Se for um arquivo recentemente selecionado, remova-o também
+    if (index < selectedFiles.length) {
+      const newSelectedFiles = [...selectedFiles];
+      newSelectedFiles.splice(index, 1);
+      setSelectedFiles(newSelectedFiles);
     }
   };
 
@@ -70,7 +129,30 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
       setErrors({ categoryId: 'Categoria não encontrada' });
       return;
     }
-    
+
+    // Em um cenário real, aqui faríamos upload dos arquivos para um servidor e obteríamos as URLs
+    // Para este exemplo, vamos simular URLs para os arquivos selecionados
+    const newDocuments = selectedFiles.map((file, index) => {
+      const fileType = file.type.split('/')[0] === 'image' 
+        ? 'image' 
+        : file.type === 'application/pdf' 
+          ? 'pdf' 
+          : 'document';
+      
+      return {
+        id: `new-doc-${index}`,
+        name: file.name,
+        url: `mock-url-${file.name}`, // Em um cenário real, esta seria a URL do servidor
+        type: fileType,
+        size: file.size,
+        uploadDate: new Date()
+      };
+    });
+
+    // Combinar documentos existentes (se estiver editando) com novos documentos
+    const documentsList = [...(initialItem?.documents || []), ...newDocuments]
+      .filter(doc => previews.some(p => p.name === doc.name)); // Manter apenas os que não foram removidos
+
     onSubmit({
       name: form.name,
       description: form.description,
@@ -80,7 +162,8 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
       unit: form.unit,
       location: form.location,
       status: form.status,
-      imageUrl: form.imageUrl
+      imageUrl: form.imageUrl,
+      documents: documentsList
     });
   };
 
@@ -191,6 +274,85 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
           />
           {errors.description && <p className="text-destructive text-sm">{errors.description}</p>}
         </div>
+
+        {/* Nova seção para upload de documentos */}
+        <div className="space-y-4 md:col-span-2 border rounded-md p-4">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="documents">Documentos</Label>
+            <div className="text-xs text-muted-foreground">
+              Adicione PDFs, imagens ou outros documentos relevantes
+            </div>
+          </div>
+
+          <div className="border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center text-center">
+            <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground mb-2">
+              Arraste arquivos aqui ou clique para selecionar
+            </p>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm"
+              onClick={() => document.getElementById('file-upload')?.click()}
+            >
+              Selecionar Arquivos
+            </Button>
+            <Input
+              id="file-upload"
+              type="file"
+              multiple
+              className="hidden"
+              onChange={handleFileChange}
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+            />
+          </div>
+
+          {/* Previews dos arquivos */}
+          {previews.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <Label>Arquivos selecionados ({previews.length})</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {previews.map((file, index) => (
+                  <div 
+                    key={index} 
+                    className="flex items-center justify-between p-2 border rounded-md"
+                  >
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      {file.type === 'image' && file.url ? (
+                        <div className="h-8 w-8 rounded overflow-hidden flex-shrink-0">
+                          <img 
+                            src={file.url} 
+                            alt={file.name} 
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <FileIcon className="h-6 w-6 text-primary flex-shrink-0" />
+                      )}
+                      <div className="overflow-hidden">
+                        <p className="text-sm truncate" title={file.name}>
+                          {file.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {file.type}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 flex-shrink-0"
+                      onClick={() => removeFile(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex justify-end gap-2">
@@ -206,3 +368,4 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
 };
 
 export default ItemForm;
+

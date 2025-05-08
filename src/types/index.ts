@@ -38,6 +38,15 @@ export interface ItemCategory {
   name: string;
 }
 
+export interface ItemDocument {
+  id: string;
+  name: string;
+  url: string;
+  type: string; // 'image', 'pdf', 'document'
+  size?: number; // in bytes
+  uploadDate?: Date;
+}
+
 export interface Item {
   id: string;
   name: string;
@@ -49,6 +58,7 @@ export interface Item {
   location: string;
   status: ItemStatus;
   imageUrl?: string;
+  documents?: ItemDocument[];
   createdAt: Date;
   updatedAt: Date;
 }

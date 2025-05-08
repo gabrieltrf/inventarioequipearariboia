@@ -23,6 +23,7 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
     description: initialItem?.description || '',
     categoryId: initialItem?.category.id || categories[0]?.id || '',
     quantity: initialItem?.quantity || 0,
+    minQuantity: initialItem?.minQuantity || 0,
     unit: initialItem?.unit || 'unidade',
     location: initialItem?.location || '',
     status: initialItem?.status || ItemStatus.AVAILABLE,
@@ -50,6 +51,7 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
     if (!form.description.trim()) newErrors.description = 'Descrição é obrigatória';
     if (!form.categoryId) newErrors.categoryId = 'Categoria é obrigatória';
     if (form.quantity < 0) newErrors.quantity = 'Quantidade não pode ser negativa';
+    if (form.minQuantity < 0) newErrors.minQuantity = 'Quantidade mínima não pode ser negativa';
     if (!form.unit.trim()) newErrors.unit = 'Unidade é obrigatória';
     if (!form.location.trim()) newErrors.location = 'Localização é obrigatória';
     
@@ -74,6 +76,7 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
       description: form.description,
       category: selectedCategory,
       quantity: Number(form.quantity),
+      minQuantity: Number(form.minQuantity),
       unit: form.unit,
       location: form.location,
       status: form.status,
@@ -124,6 +127,19 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
             className={errors.quantity ? 'border-destructive' : ''}
           />
           {errors.quantity && <p className="text-destructive text-sm">{errors.quantity}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="minQuantity">Quantidade Mínima</Label>
+          <Input 
+            id="minQuantity"
+            type="number"
+            min="0"
+            value={form.minQuantity}
+            onChange={(e) => handleChange('minQuantity', parseInt(e.target.value) || 0)}
+            className={errors.minQuantity ? 'border-destructive' : ''}
+          />
+          {errors.minQuantity && <p className="text-destructive text-sm">{errors.minQuantity}</p>}
         </div>
 
         <div className="space-y-2">

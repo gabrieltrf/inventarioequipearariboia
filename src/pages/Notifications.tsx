@@ -1,16 +1,78 @@
 
 import { useState } from 'react';
-import { useInventory } from '@/contexts/InventoryContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Bell, CheckCircle, Calendar, AlertTriangle, Package, ArrowRightLeft, Info } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Notification } from '@/contexts/InventoryContextExtension';
+
+// Dados de exemplo para notificações (até integrarmos ao contexto)
+const mockNotifications: Notification[] = [
+  {
+    id: '1',
+    type: 'estoque_baixo',
+    title: 'Estoque baixo',
+    itemName: 'Laptop Dell XPS',
+    itemId: '123',
+    message: 'O estoque está abaixo do limite mínimo (apenas 2 unidades)',
+    date: new Date(2023, 4, 15),
+    read: false,
+    actionLink: '/'
+  },
+  {
+    id: '2',
+    type: 'emprestimo',
+    title: 'Novo empréstimo',
+    itemName: 'Projetor Sony',
+    itemId: '456',
+    message: 'Empréstimo realizado para Maria Silva',
+    date: new Date(2023, 4, 14),
+    read: true,
+    actionLink: '/emprestimos'
+  },
+  {
+    id: '3',
+    type: 'devolucao_atrasada',
+    title: 'Devolução atrasada',
+    itemName: 'Câmera Canon EOS',
+    itemId: '789',
+    message: 'O item deveria ter sido devolvido há 3 dias',
+    date: new Date(2023, 4, 10),
+    read: false,
+    actionLink: '/emprestimos'
+  },
+  {
+    id: '4',
+    type: 'movimentacao',
+    title: 'Entrada de estoque',
+    itemName: 'Mouse Logitech',
+    itemId: '101',
+    message: 'Adicionadas 10 unidades ao estoque',
+    date: new Date(2023, 4, 8),
+    read: true,
+    actionLink: '/movimentacoes'
+  }
+];
 
 const Notifications = () => {
-  const { notifications, markNotificationAsRead, markAllNotificationsAsRead } = useInventory();
+  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+
+  const markNotificationAsRead = (id: string) => {
+    setNotifications(prev => 
+      prev.map(notif => 
+        notif.id === id ? { ...notif, read: true } : notif
+      )
+    );
+  };
+
+  const markAllNotificationsAsRead = () => {
+    setNotifications(prev => 
+      prev.map(notif => ({ ...notif, read: true }))
+    );
+  };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {

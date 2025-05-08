@@ -18,9 +18,6 @@ import Reports from "./pages/Reports";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 
-// Libs para exportação
-import 'jspdf-autotable';
-
 const queryClient = new QueryClient();
 
 const App = () => (

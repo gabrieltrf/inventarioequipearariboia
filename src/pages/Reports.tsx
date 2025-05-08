@@ -1,20 +1,19 @@
-
 import { useState } from 'react';
 import { useInventory } from '@/contexts/InventoryContext';
 import { useExport } from '@/contexts/InventoryContextExtension';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { BarChart3, Calendar, Package, ArrowRightLeft, FilePdf, FileSpreadsheet, QrCode, Calendar as CalendarIcon } from 'lucide-react';
+import { BarChart3, Calendar, Package, ArrowRightLeft, FileDown, FileSpreadsheet, QrCode, Calendar as CalendarIcon } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
+import 'jspdf-autotable';
 
 const Reports = () => {
   const { items, loans, movements } = useInventory();
@@ -54,11 +53,12 @@ const Reports = () => {
 
   // Dados para os gráficos
   const categoryData = items.reduce((acc, item) => {
-    const category = acc.find(c => c.name === item.category);
+    const categoryName = String(item.category);
+    const category = acc.find(c => c.name === categoryName);
     if (category) {
       category.value += 1;
     } else {
-      acc.push({ name: item.category, value: 1 });
+      acc.push({ name: categoryName, value: 1 });
     }
     return acc;
   }, [] as { name: string, value: number }[]);
@@ -293,7 +293,7 @@ const Reports = () => {
                   className="flex items-center"
                   aria-label="Exportar para PDF"
                 >
-                  <FilePdf className="mr-2 h-4 w-4" aria-hidden="true" /> Exportar para PDF
+                  <FileDown className="mr-2 h-4 w-4" aria-hidden="true" /> Exportar para PDF
                 </Button>
                 <Button 
                   variant="outline"
@@ -396,7 +396,7 @@ const Reports = () => {
                 className="flex items-center"
                 aria-label="Exportar para PDF"
               >
-                <FilePdf className="mr-2 h-4 w-4" aria-hidden="true" /> Exportar para PDF
+                <FileDown className="mr-2 h-4 w-4" aria-hidden="true" /> Exportar para PDF
               </Button>
               <Button 
                 variant="outline"
@@ -439,7 +439,7 @@ const Reports = () => {
                 className="flex items-center"
                 aria-label="Exportar para PDF"
               >
-                <FilePdf className="mr-2 h-4 w-4" aria-hidden="true" /> Exportar para PDF
+                <FileDown className="mr-2 h-4 w-4" aria-hidden="true" /> Exportar para PDF
               </Button>
               <Button 
                 variant="outline"

@@ -84,12 +84,12 @@ export function useExport() {
         `${movement.quantity} ${movement.item.unit}`,
         movement.reason,
         format(movement.date, 'dd/MM/yyyy', { locale: ptBR }),
-        movement.user.name
+        movement.responsible || 'Não especificado'
       ]);
       
       (doc as any).autoTable({
         startY: 45,
-        head: [['ID', 'Item', 'Tipo', 'Quantidade', 'Motivo', 'Data', 'Usuário']],
+        head: [['ID', 'Item', 'Tipo', 'Quantidade', 'Motivo', 'Data', 'Responsável']],
         body: data,
       });
     }
@@ -153,7 +153,7 @@ export function useExport() {
         Unidade: movement.item.unit,
         Motivo: movement.reason,
         Data: format(movement.date, 'dd/MM/yyyy', { locale: ptBR }),
-        Usuário: movement.user.name,
+        Responsável: movement.responsible || 'Não especificado',
         Observações: movement.notes || '',
       }));
     }

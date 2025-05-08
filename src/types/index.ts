@@ -1,4 +1,3 @@
-
 // Tipos para o sistema de inventário
 
 export enum ItemStatus {
@@ -38,6 +37,16 @@ export interface ItemCategory {
   name: string;
 }
 
+export interface Location {
+  id: string;
+  name: string;
+  description: string;
+  capacity?: number;
+  responsible?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface ItemDocument {
   id: string;
   name: string;
@@ -55,7 +64,7 @@ export interface Item {
   quantity: number;
   minQuantity: number;
   unit: string;
-  location: string;
+  locationId: string; // Modificado para usar o ID da localização em vez de uma string
   status: ItemStatus;
   imageUrl?: string;
   documents?: ItemDocument[];

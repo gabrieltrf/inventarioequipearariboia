@@ -1,4 +1,3 @@
-
 import {
   Sidebar,
   SidebarContent,
@@ -11,7 +10,7 @@ import {
   SidebarMenuItem,
   SidebarFooter
 } from "@/components/ui/sidebar";
-import { Package, ArrowRightLeft, Calendar, BarChart3, Moon, Sun, Bell } from "lucide-react";
+import { Package, ArrowRightLeft, Calendar, BarChart3, Moon, Sun, Bell, MapPin } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
@@ -44,6 +43,12 @@ export function AppSidebar() {
       icon: Calendar,
       url: "/emprestimos",
       ariaLabel: "Página de empréstimos"
+    },
+    {
+      title: "Localizações",
+      icon: MapPin,
+      url: "/localizacoes",
+      ariaLabel: "Página de localizações"
     },
     {
       title: "Relatórios",

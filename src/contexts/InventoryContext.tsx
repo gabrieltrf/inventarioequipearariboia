@@ -1,9 +1,26 @@
-
-import React, { createContext, useContext, useState } from 'react';
-import { categories, items as initialItems, loans as initialLoans, movements as initialMovements, currentUser, users } from '@/data/mockData';
-import { Item, Loan, Movement, ItemStatus, MovementType, MovementReason, User, UserRole } from '@/types';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { 
+  categories as initialCategories, 
+  items as initialItemsMock, 
+  loans as initialLoans, 
+  movements as initialMovements, 
+  currentUser, 
+  users, 
+} from '@/data/mockData';
+import { 
+  Item, 
+  Loan, 
+  Movement, 
+  ItemStatus, 
+  MovementType, 
+  MovementReason, 
+  User, 
+  UserRole, 
+  Location 
+} from '@/types';
 import { toast } from 'sonner';
 import { Notification } from './InventoryContextExtension';
+import { locationService, itemService } from '@/services/firestoreService';
 
 interface InventoryContextType {
   items: Item[];
@@ -11,11 +28,14 @@ interface InventoryContextType {
   movements: Movement[];
   categories: { id: string; name: string }[];
   users: User[];
+  locations: Location[];
   currentUser: User;
   notifications?: Notification[];
-  addItem: (item: Omit<Item, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updateItem: (id: string, data: Partial<Item>) => void;
-  deleteItem: (id: string) => void;
+  loadingItems: boolean;
+  loadingLocations: boolean;
+  addItem: (item: Omit<Item, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateItem: (id: string, data: Partial<Item>) => Promise<void>;
+  deleteItem: (id: string) => Promise<void>;
   addMovement: (movement: Omit<Movement, 'id' | 'date'>) => void;
   addLoan: (loan: Omit<Loan, 'id'>) => void;
   returnLoan: (loanId: string) => void;
@@ -24,42 +44,81 @@ interface InventoryContextType {
   setUser: (userId: string) => void;
   searchItems: (query: string) => Item[];
   filterItemsByStatus: (status: ItemStatus | null) => Item[];
+  addLocation: (location: Omit<Location, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateLocation: (id: string, data: Partial<Location>) => Promise<void>;
+  deleteLocation: (id: string) => Promise<void>;
+  getItemsByLocation: (locationId: string) => Item[];
+  getLocationById: (id: string) => Location | undefined;
+  refreshItems: () => Promise<void>;
+  refreshLocations: () => Promise<void>;
 }
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
 
 export const InventoryProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
-  const [items, setItems] = useState<Item[]>(initialItems);
+  const [items, setItems] = useState<Item[]>([]);
   const [loans, setLoans] = useState<Loan[]>(initialLoans);
   const [movements, setMovements] = useState<Movement[]>(initialMovements);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [isCardView, setIsCardView] = useState(false);
   const [user, setUser] = useState<User>(currentUser);
+  const [loadingItems, setLoadingItems] = useState(true);
+  const [loadingLocations, setLoadingLocations] = useState(true);
 
-  const addItem = (item: Omit<Item, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newItem: Item = {
-      ...item,
-      id: Math.random().toString(36).substr(2, 9),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    
-    setItems(prev => [...prev, newItem]);
-    toast.success(`Item "${newItem.name}" adicionado com sucesso!`);
+  useEffect(() => {
+    refreshLocations();
+    refreshItems();
+  }, []);
+
+  const refreshLocations = async (): Promise<void> => {
+    try {
+      setLoadingLocations(true);
+      const locationsData = await locationService.getAll();
+      setLocations(locationsData);
+    } catch (error) {
+      console.error("Erro ao carregar localizações:", error);
+      toast.error("Erro ao carregar localizações");
+    } finally {
+      setLoadingLocations(false);
+    }
   };
 
-  const updateItem = (id: string, data: Partial<Item>) => {
-    setItems(prev => 
-      prev.map(item => 
-        item.id === id 
-          ? { ...item, ...data, updatedAt: new Date() } 
-          : item
-      )
-    );
-    toast.success('Item atualizado com sucesso!');
+  const refreshItems = async (): Promise<void> => {
+    try {
+      setLoadingItems(true);
+      const itemsData = await itemService.getAll();
+      setItems(itemsData);
+    } catch (error) {
+      console.error("Erro ao carregar itens:", error);
+      toast.error("Erro ao carregar itens");
+    } finally {
+      setLoadingItems(false);
+    }
   };
 
-  const deleteItem = (id: string) => {
-    // Verificar se item está emprestado
+  const addItem = async (item: Omit<Item, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
+    try {
+      await itemService.create(item);
+      toast.success(`Item "${item.name}" adicionado com sucesso!`);
+      await refreshItems();
+    } catch (error) {
+      console.error("Erro ao adicionar item:", error);
+      toast.error("Erro ao adicionar item");
+    }
+  };
+
+  const updateItem = async (id: string, data: Partial<Item>): Promise<void> => {
+    try {
+      await itemService.update(id, data);
+      toast.success('Item atualizado com sucesso!');
+      await refreshItems();
+    } catch (error) {
+      console.error("Erro ao atualizar item:", error);
+      toast.error("Erro ao atualizar item");
+    }
+  };
+
+  const deleteItem = async (id: string): Promise<void> => {
     const hasActiveLoans = loans.some(loan => 
       loan.item.id === id && !loan.actualReturnDate
     );
@@ -69,11 +128,74 @@ export const InventoryProvider: React.FC<{children: React.ReactNode}> = ({ child
       return;
     }
     
-    const item = items.find(i => i.id === id);
-    setItems(prev => prev.filter(item => item.id !== id));
+    try {
+      const item = items.find(i => i.id === id);
+      await itemService.delete(id);
+      await refreshItems();
+      
+      if (item) {
+        toast.success(`Item "${item.name}" excluído com sucesso!`);
+      }
+    } catch (error) {
+      console.error("Erro ao excluir item:", error);
+      toast.error("Erro ao excluir item");
+    }
+  };
+
+  const addLocation = async (location: Omit<Location, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
+    try {
+      // Ensure we're sending data without undefined values
+      const locationData = {
+        name: location.name,
+        description: location.description,
+        // Only include these fields if they are defined
+        ...(location.capacity !== undefined && location.capacity !== null 
+            ? { capacity: Number(location.capacity) } 
+            : {}),
+        ...(location.responsible && location.responsible.trim() !== '' 
+            ? { responsible: location.responsible } 
+            : {})
+      };
+      
+      await locationService.create(locationData);
+      toast.success(`Localização "${location.name}" adicionada com sucesso!`);
+      await refreshLocations();
+    } catch (error) {
+      console.error("Erro ao adicionar localização:", error);
+      toast.error("Erro ao adicionar localização");
+    }
+  };
+
+  const updateLocation = async (id: string, data: Partial<Location>): Promise<void> => {
+    try {
+      await locationService.update(id, data);
+      toast.success('Localização atualizada com sucesso!');
+      await refreshLocations();
+    } catch (error) {
+      console.error("Erro ao atualizar localização:", error);
+      toast.error("Erro ao atualizar localização");
+    }
+  };
+
+  const deleteLocation = async (id: string): Promise<void> => {
+    const hasItems = items.some(item => item.locationId === id);
     
-    if (item) {
-      toast.success(`Item "${item.name}" excluído com sucesso!`);
+    if (hasItems) {
+      toast.error('Não é possível excluir uma localização que possui itens.');
+      return;
+    }
+    
+    try {
+      const location = locations.find(loc => loc.id === id);
+      await locationService.delete(id);
+      await refreshLocations();
+      
+      if (location) {
+        toast.success(`Localização "${location.name}" excluída com sucesso!`);
+      }
+    } catch (error) {
+      console.error("Erro ao excluir localização:", error);
+      toast.error("Erro ao excluir localização");
     }
   };
 
@@ -84,7 +206,6 @@ export const InventoryProvider: React.FC<{children: React.ReactNode}> = ({ child
       date: new Date(),
     };
     
-    // Atualizar quantidade do item
     const item = items.find(i => i.id === movement.item.id);
     if (item) {
       const newQuantity = movement.type === MovementType.INPUT 
@@ -104,7 +225,6 @@ export const InventoryProvider: React.FC<{children: React.ReactNode}> = ({ child
   };
 
   const addLoan = (loan: Omit<Loan, 'id'>) => {
-    // Verificar disponibilidade
     const item = items.find(i => i.id === loan.item.id);
     if (!item) {
       toast.error('Item não encontrado.');
@@ -121,12 +241,10 @@ export const InventoryProvider: React.FC<{children: React.ReactNode}> = ({ child
       id: Math.random().toString(36).substr(2, 9),
     };
     
-    // Atualizar quantidade e status do item
     const newQuantity = item.quantity - loan.quantity;
     const newStatus = newQuantity === 0 ? ItemStatus.BORROWED : item.status;
     updateItem(item.id, { quantity: newQuantity, status: newStatus });
     
-    // Registrar movimentação
     addMovement({
       item: loan.item,
       type: MovementType.OUTPUT,
@@ -147,13 +265,11 @@ export const InventoryProvider: React.FC<{children: React.ReactNode}> = ({ child
       return;
     }
     
-    // Atualizar empréstimo
     const updatedLoan = {...loan, actualReturnDate: new Date()};
     setLoans(prev => 
       prev.map(l => l.id === loanId ? updatedLoan : l)
     );
     
-    // Atualizar quantidade do item
     const item = items.find(i => i.id === loan.item.id);
     if (item) {
       const newQuantity = item.quantity + loan.quantity;
@@ -162,7 +278,6 @@ export const InventoryProvider: React.FC<{children: React.ReactNode}> = ({ child
         status: newQuantity > 0 ? ItemStatus.AVAILABLE : item.status
       });
       
-      // Registrar movimentação
       addMovement({
         item: loan.item,
         type: MovementType.INPUT,
@@ -198,7 +313,7 @@ export const InventoryProvider: React.FC<{children: React.ReactNode}> = ({ child
       item.id.toLowerCase().includes(lowerQuery) ||
       item.description.toLowerCase().includes(lowerQuery) ||
       item.category.name.toLowerCase().includes(lowerQuery) ||
-      item.location.toLowerCase().includes(lowerQuery)
+      item.locationId.toLowerCase().includes(lowerQuery)
     );
   };
 
@@ -207,14 +322,25 @@ export const InventoryProvider: React.FC<{children: React.ReactNode}> = ({ child
     return items.filter(item => item.status === status);
   };
 
+  const getItemsByLocation = (locationId: string): Item[] => {
+    return items.filter(item => item.locationId === locationId);
+  };
+
+  const getLocationById = (id: string): Location | undefined => {
+    return locations.find(location => location.id === id);
+  };
+
   return (
     <InventoryContext.Provider value={{
       items,
       loans,
       movements,
-      categories,
+      categories: initialCategories,
       users,
+      locations,
       currentUser: user,
+      loadingItems,
+      loadingLocations,
       addItem,
       updateItem,
       deleteItem,
@@ -225,7 +351,14 @@ export const InventoryProvider: React.FC<{children: React.ReactNode}> = ({ child
       isCardView,
       setUser: setCurrentUser,
       searchItems,
-      filterItemsByStatus
+      filterItemsByStatus,
+      addLocation,
+      updateLocation,
+      deleteLocation,
+      getItemsByLocation,
+      getLocationById,
+      refreshItems,
+      refreshLocations
     }}>
       {children}
     </InventoryContext.Provider>

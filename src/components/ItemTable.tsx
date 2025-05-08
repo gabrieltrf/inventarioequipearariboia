@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Item, UserRole } from '@/types';
 import StatusBadge from './StatusBadge';
@@ -13,15 +12,22 @@ interface ItemTableProps {
   onEdit: (item: Item) => void;
   onLoan: (item: Item) => void;
   onViewDetails: (item: Item) => void;
+  loading?: boolean;
 }
 
-const ItemTable = ({ items, onEdit, onLoan, onViewDetails }: ItemTableProps) => {
-  const { deleteItem, currentUser } = useInventory();
+const ItemTable = ({ items, onEdit, onLoan, onViewDetails, loading = false }: ItemTableProps) => {
+  const { deleteItem, currentUser, getLocationById } = useInventory();
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean, item: Item | null }>({
     open: false,
     item: null
   });
   const isAdmin = currentUser.role === UserRole.ADMIN;
+
+  // Helper function to get location name from ID
+  const getLocationName = (locationId: string): string => {
+    const location = getLocationById(locationId);
+    return location ? location.name : 'Desconhecida';
+  };
 
   const handleDelete = () => {
     if (confirmDelete.item) {
@@ -46,7 +52,18 @@ const ItemTable = ({ items, onEdit, onLoan, onViewDetails }: ItemTableProps) => 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.length === 0 ? (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24">
+                  <div className="flex justify-center items-center">
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                      <p className="text-sm text-muted-foreground">Carregando itens...</p>
+                    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center">
                   Nenhum item encontrado.
@@ -59,7 +76,7 @@ const ItemTable = ({ items, onEdit, onLoan, onViewDetails }: ItemTableProps) => 
                   <TableCell>{item.name}</TableCell>
                   <TableCell>{item.category.name}</TableCell>
                   <TableCell className="text-center">{item.quantity} {item.unit}</TableCell>
-                  <TableCell>{item.location}</TableCell>
+                  <TableCell>{getLocationName(item.locationId)}</TableCell>
                   <TableCell>
                     <StatusBadge status={item.status} />
                   </TableCell>

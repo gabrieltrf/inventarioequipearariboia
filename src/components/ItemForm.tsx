@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,7 +18,7 @@ interface ItemFormProps {
 const statusOptions = Object.values(ItemStatus);
 
 const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
-  const { categories } = useInventory();
+  const { categories, locations } = useInventory();
   const [form, setForm] = useState({
     name: initialItem?.name || '',
     description: initialItem?.description || '',
@@ -27,7 +26,7 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
     quantity: initialItem?.quantity || 0,
     minQuantity: initialItem?.minQuantity || 0,
     unit: initialItem?.unit || 'unidade',
-    location: initialItem?.location || '',
+    locationId: initialItem?.locationId || locations[0]?.id || '',
     status: initialItem?.status || ItemStatus.AVAILABLE,
     imageUrl: initialItem?.imageUrl || '',
     documents: initialItem?.documents || []
@@ -112,7 +111,7 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
     if (form.quantity < 0) newErrors.quantity = 'Quantidade não pode ser negativa';
     if (form.minQuantity < 0) newErrors.minQuantity = 'Quantidade mínima não pode ser negativa';
     if (!form.unit.trim()) newErrors.unit = 'Unidade é obrigatória';
-    if (!form.location.trim()) newErrors.location = 'Localização é obrigatória';
+    if (!form.locationId) newErrors.locationId = 'Localização é obrigatória';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -124,9 +123,15 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
     if (!validateForm()) return;
     
     const selectedCategory = categories.find(c => c.id === form.categoryId);
+    const selectedLocation = locations.find(l => l.id === form.locationId);
     
     if (!selectedCategory) {
       setErrors({ categoryId: 'Categoria não encontrada' });
+      return;
+    }
+
+    if (!selectedLocation) {
+      setErrors({ locationId: 'Localização não encontrada' });
       return;
     }
 
@@ -160,7 +165,7 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
       quantity: Number(form.quantity),
       minQuantity: Number(form.minQuantity),
       unit: form.unit,
-      location: form.location,
+      locationId: selectedLocation?.id,
       status: form.status,
       imageUrl: form.imageUrl,
       documents: documentsList
@@ -238,13 +243,20 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
 
         <div className="space-y-2">
           <Label htmlFor="location">Localização</Label>
-          <Input 
-            id="location"
-            value={form.location}
-            onChange={(e) => handleChange('location', e.target.value)}
-            className={errors.location ? 'border-destructive' : ''}
-          />
-          {errors.location && <p className="text-destructive text-sm">{errors.location}</p>}
+          <Select 
+            value={form.locationId} 
+            onValueChange={(value) => handleChange('locationId', value)}
+          >
+            <SelectTrigger className={errors.locationId ? 'border-destructive' : ''}>
+              <SelectValue placeholder="Selecione uma localização" />
+            </SelectTrigger>
+            <SelectContent>
+              {locations.map((location) => (
+                <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.locationId && <p className="text-destructive text-sm">{errors.locationId}</p>}
         </div>
 
         <div className="space-y-2">

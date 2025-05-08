@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -21,7 +20,7 @@ import { Grid3X3, Table2, Plus, Search, Filter } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const Inventory = () => {
-  const { items, switchViewMode, isCardView, addItem, updateItem, addLoan, searchItems, filterItemsByStatus, currentUser } = useInventory();
+  const { items, switchViewMode, isCardView, addItem, updateItem, addLoan, searchItems, filterItemsByStatus, currentUser, loadingItems } = useInventory();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<ItemStatus | null>(null);
   const [dialogContent, setDialogContent] = useState<{
@@ -178,6 +177,7 @@ const Inventory = () => {
             onEdit={(item) => handleItemAction('edit', item)}
             onLoan={(item) => handleItemAction('loan', item)}
             onViewDetails={(item) => handleItemAction('details', item)}
+            loading={loadingItems}
           />
         )}
       </div>

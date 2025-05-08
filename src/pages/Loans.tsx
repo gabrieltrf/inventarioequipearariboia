@@ -1,9 +1,8 @@
-
 import { useState } from 'react';
 import { useInventory } from '@/contexts/InventoryContext';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format, isAfter } from 'date-fns';
+import { format, isAfter, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import StatusBadge from '@/components/StatusBadge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -31,9 +30,50 @@ const Loans = () => {
       setSelectedLoanId(null);
     }
   };
+
+  // Helper function to safely format dates
+  const formatDate = (date: any): string => {
+    if (!date) return 'N/A';
+    
+    // If it's a Firebase Timestamp
+    if (date && typeof date === 'object' && 'toDate' in date && typeof date.toDate === 'function') {
+      try {
+        return format(date.toDate(), 'dd/MM/yyyy', { locale: ptBR });
+      } catch (error) {
+        console.error("Error converting timestamp:", error);
+        return 'Data inválida';
+      }
+    }
+    
+    // If it's a JavaScript Date
+    try {
+      return isValid(new Date(date)) 
+        ? format(new Date(date), 'dd/MM/yyyy', { locale: ptBR }) 
+        : 'Data inválida';
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return 'Data inválida';
+    }
+  };
   
+  // Helper function to safely check if a date is after another
+  const safeIsAfter = (date1: any, date2: any): boolean => {
+    try {
+      const d1 = date1 instanceof Date ? date1 : 
+                (date1 && 'toDate' in date1 ? date1.toDate() : new Date(date1));
+      const d2 = date2 instanceof Date ? date2 : 
+                (date2 && 'toDate' in date2 ? date2.toDate() : new Date(date2));
+      
+      return isValid(d1) && isValid(d2) && isAfter(d1, d2);
+    } catch (error) {
+      console.error("Error comparing dates:", error);
+      return false;
+    }
+  };
+  
+  // Update isOverdue function to use the safe version
   const isOverdue = (expectedDate: Date): boolean => {
-    return isAfter(new Date(), expectedDate);
+    return safeIsAfter(new Date(), expectedDate);
   };
 
   return (
@@ -79,8 +119,8 @@ const Loans = () => {
                       </TableCell>
                       <TableCell>{loan.borrower.name}</TableCell>
                       <TableCell className="text-center">{loan.quantity} {loan.item.unit}</TableCell>
-                      <TableCell>{format(loan.borrowDate, "dd/MM/yyyy", { locale: ptBR })}</TableCell>
-                      <TableCell>{format(loan.expectedReturnDate, "dd/MM/yyyy", { locale: ptBR })}</TableCell>
+                      <TableCell>{formatDate(loan.borrowDate)}</TableCell>
+                      <TableCell>{formatDate(loan.expectedReturnDate)}</TableCell>
                       <TableCell>
                         {isLate ? (
                           <div className="flex items-center">
@@ -153,8 +193,8 @@ const Loans = () => {
                       </TableCell>
                       <TableCell>{loan.borrower.name}</TableCell>
                       <TableCell className="text-center">{loan.quantity} {loan.item.unit}</TableCell>
-                      <TableCell>{format(loan.borrowDate, "dd/MM/yyyy", { locale: ptBR })}</TableCell>
-                      <TableCell>{format(loan.actualReturnDate!, "dd/MM/yyyy", { locale: ptBR })}</TableCell>
+                      <TableCell>{formatDate(loan.borrowDate)}</TableCell>
+                      <TableCell>{formatDate(loan.actualReturnDate!)}</TableCell>
                       <TableCell>{duration} {duration === 1 ? 'dia' : 'dias'}</TableCell>
                     </TableRow>
                   );

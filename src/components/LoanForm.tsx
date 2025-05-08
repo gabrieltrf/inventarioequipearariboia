@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +9,7 @@ import { useInventory } from '@/contexts/InventoryContext';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
@@ -87,6 +86,18 @@ const LoanForm = ({ item, onSubmit, onCancel }: LoanFormProps) => {
     });
   };
 
+  // Helper function to safely format dates for display
+  const formatDate = (date: Date | null | undefined): string => {
+    if (!date) return '';
+    
+    try {
+      return isValid(date) ? format(date, "dd/MM/yyyy", { locale: ptBR }) : '';
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return '';
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
@@ -142,7 +153,7 @@ const LoanForm = ({ item, onSubmit, onCancel }: LoanFormProps) => {
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {form.borrowDate ? format(form.borrowDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                {form.borrowDate ? formatDate(form.borrowDate) : "Selecione a data"}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
@@ -170,7 +181,7 @@ const LoanForm = ({ item, onSubmit, onCancel }: LoanFormProps) => {
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {form.expectedReturnDate ? format(form.expectedReturnDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                {form.expectedReturnDate ? formatDate(form.expectedReturnDate) : "Selecione a data"}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">

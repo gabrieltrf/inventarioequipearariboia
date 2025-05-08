@@ -1,5 +1,4 @@
-
-import { Item, ItemCategory, ItemStatus, Loan, Movement, MovementReason, MovementType, User, UserRole } from '@/types';
+import { Item, ItemCategory, ItemStatus, Loan, Location, Movement, MovementReason, MovementType, User, UserRole } from '@/types';
 
 // Categorias
 export const categories: ItemCategory[] = [
@@ -10,6 +9,68 @@ export const categories: ItemCategory[] = [
   { id: '5', name: 'Eletrônica' },
 ];
 
+// Localizações
+export const locations: Location[] = [
+  { 
+    id: 'loc1', 
+    name: 'Caixa de ferramentas A', 
+    description: 'Caixa de ferramentas localizada na oficina principal', 
+    capacity: 20,
+    responsible: 'João Silva',
+    createdAt: new Date(2023, 0, 15),
+    updatedAt: new Date(2023, 0, 15)
+  },
+  { 
+    id: 'loc2', 
+    name: 'Armário Elétrica', 
+    description: 'Armário para componentes elétricos na sala técnica',
+    capacity: 50,
+    responsible: 'Maria Souza',
+    createdAt: new Date(2023, 1, 10),
+    updatedAt: new Date(2023, 1, 10)
+  },
+  { 
+    id: 'loc3', 
+    name: 'Armário EPIs', 
+    description: 'Armário para equipamentos de proteção individual',
+    capacity: 30, 
+    createdAt: new Date(2023, 2, 5),
+    updatedAt: new Date(2023, 2, 5)
+  },
+  { 
+    id: 'loc4', 
+    name: 'Prateleira Componentes', 
+    description: 'Prateleira para componentes variados no almoxarifado',
+    createdAt: new Date(2023, 3, 20),
+    updatedAt: new Date(2023, 3, 20)
+  },
+  { 
+    id: 'loc5', 
+    name: 'Gaveta Eletrônica', 
+    description: 'Gaveta para componentes eletrônicos sensíveis',
+    capacity: 15,
+    responsible: 'Pedro Oliveira',
+    createdAt: new Date(2023, 4, 12),
+    updatedAt: new Date(2023, 4, 12)
+  },
+  { 
+    id: 'loc6', 
+    name: 'Gaveta Rolamentos', 
+    description: 'Gaveta para rolamentos no armário de mecânica',
+    capacity: 100,
+    createdAt: new Date(2023, 5, 8),
+    updatedAt: new Date(2023, 5, 8)
+  },
+  { 
+    id: 'loc7', 
+    name: 'Caixa de ferramentas B', 
+    description: 'Caixa de ferramentas secundária para ferramentas específicas',
+    capacity: 15,
+    createdAt: new Date(2023, 6, 22),
+    updatedAt: new Date(2023, 6, 22)
+  }
+];
+
 // Usuários
 export const users: User[] = [
   { id: '1', name: 'Admin', email: 'admin@equipe.com', role: UserRole.ADMIN },
@@ -18,7 +79,7 @@ export const users: User[] = [
   { id: '4', name: 'Pedro Oliveira', email: 'pedro@equipe.com', role: UserRole.MEMBER },
 ];
 
-// Itens
+// Itens (atualizados para usar locationId em vez de location string)
 export const items: Item[] = [
   {
     id: '001',
@@ -28,7 +89,7 @@ export const items: Item[] = [
     quantity: 5,
     minQuantity: 2,
     unit: 'unidade',
-    location: 'Caixa de ferramentas A',
+    locationId: 'loc1', // Caixa de ferramentas A
     status: ItemStatus.AVAILABLE,
     createdAt: new Date(2023, 5, 10),
     updatedAt: new Date(2023, 5, 10),
@@ -41,7 +102,7 @@ export const items: Item[] = [
     quantity: 2,
     minQuantity: 1,
     unit: 'unidade',
-    location: 'Armário Elétrica',
+    locationId: 'loc2', // Armário Elétrica
     status: ItemStatus.BORROWED,
     createdAt: new Date(2023, 6, 15),
     updatedAt: new Date(2023, 7, 20),
@@ -54,7 +115,7 @@ export const items: Item[] = [
     quantity: 8,
     minQuantity: 3,
     unit: 'unidade',
-    location: 'Armário EPIs',
+    locationId: 'loc3', // Armário EPIs
     status: ItemStatus.AVAILABLE,
     createdAt: new Date(2023, 4, 5),
     updatedAt: new Date(2023, 4, 5),
@@ -67,7 +128,7 @@ export const items: Item[] = [
     quantity: 1,
     minQuantity: 1,
     unit: 'unidade',
-    location: 'Prateleira Componentes',
+    locationId: 'loc4', // Prateleira Componentes
     status: ItemStatus.DAMAGED,
     createdAt: new Date(2023, 3, 20),
     updatedAt: new Date(2023, 8, 10),
@@ -80,7 +141,7 @@ export const items: Item[] = [
     quantity: 3,
     minQuantity: 2,
     unit: 'unidade',
-    location: 'Gaveta Eletrônica',
+    locationId: 'loc5', // Gaveta Eletrônica
     status: ItemStatus.MAINTENANCE,
     createdAt: new Date(2023, 7, 12),
     updatedAt: new Date(2023, 9, 5),
@@ -93,7 +154,7 @@ export const items: Item[] = [
     quantity: 10,
     minQuantity: 5,
     unit: 'par',
-    location: 'Armário EPIs',
+    locationId: 'loc3', // Armário EPIs
     status: ItemStatus.AVAILABLE,
     createdAt: new Date(2023, 2, 8),
     updatedAt: new Date(2023, 2, 8),
@@ -106,7 +167,7 @@ export const items: Item[] = [
     quantity: 20,
     minQuantity: 5,
     unit: 'unidade',
-    location: 'Gaveta Rolamentos',
+    locationId: 'loc6', // Gaveta Rolamentos
     status: ItemStatus.AVAILABLE,
     createdAt: new Date(2023, 1, 15),
     updatedAt: new Date(2023, 1, 15),
@@ -119,7 +180,7 @@ export const items: Item[] = [
     quantity: 2,
     minQuantity: 2,
     unit: 'unidade',
-    location: 'Caixa de ferramentas B',
+    locationId: 'loc7', // Caixa de ferramentas B
     status: ItemStatus.BORROWED,
     createdAt: new Date(2023, 8, 25),
     updatedAt: new Date(2023, 9, 10),

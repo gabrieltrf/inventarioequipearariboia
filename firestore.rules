@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Permissões temporárias para desenvolvimento - substitua por regras mais seguras em produção
+    match /{document=**} {
+      allow read, write: if true;
+    }
+    
+    // Exemplo de regras mais seguras para futura implementação:
+    // match /locations/{locationId} {
+    //   allow read: if true; // Qualquer pessoa pode ler
+    //   allow write: if request.auth != null; // Apenas usuários autenticados podem escrever
+    // }
+    
+    // match /items/{itemId} {
+    //   allow read: if true;
+    //   allow write: if request.auth != null;
+    // }
+  }
+}

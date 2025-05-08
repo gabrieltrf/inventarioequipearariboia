@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState } from 'react';
 import { categories, items as initialItems, loans as initialLoans, movements as initialMovements, currentUser, users } from '@/data/mockData';
 import { Item, Loan, Movement, ItemStatus, MovementType, MovementReason, User, UserRole } from '@/types';
 import { toast } from 'sonner';
+import { Notification } from './InventoryContextExtension';
 
 interface InventoryContextType {
   items: Item[];
@@ -11,6 +12,7 @@ interface InventoryContextType {
   categories: { id: string; name: string }[];
   users: User[];
   currentUser: User;
+  notifications?: Notification[];
   addItem: (item: Omit<Item, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateItem: (id: string, data: Partial<Item>) => void;
   deleteItem: (id: string) => void;

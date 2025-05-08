@@ -44,6 +44,7 @@ export interface Item {
   description: string;
   category: ItemCategory;
   quantity: number;
+  minQuantity: number;
   unit: string;
   location: string;
   status: ItemStatus;

@@ -84,7 +84,7 @@ export function useExport() {
         `${movement.quantity} ${movement.item.unit}`,
         movement.reason,
         format(movement.date, 'dd/MM/yyyy', { locale: ptBR }),
-        movement.user?.name || 'Não especificado'
+        movement.responsibleUser?.name || 'Não especificado'
       ]);
       
       (doc as any).autoTable({
@@ -153,7 +153,7 @@ export function useExport() {
         Unidade: movement.item.unit,
         Motivo: movement.reason,
         Data: format(movement.date, 'dd/MM/yyyy', { locale: ptBR }),
-        Responsável: movement.user?.name || 'Não especificado',
+        Responsável: movement.responsibleUser?.name || 'Não especificado',
         Observações: movement.notes || '',
       }));
     }

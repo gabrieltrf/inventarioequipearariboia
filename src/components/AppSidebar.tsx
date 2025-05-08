@@ -1,4 +1,3 @@
-
 import {
   Sidebar,
   SidebarContent,
@@ -19,9 +18,11 @@ import { useInventory } from "@/contexts/InventoryContext";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
 import { toast } from "@/hooks/use-toast";
+import { useNotifications } from "@/contexts/NotificationsContext";
 
 export function AppSidebar() {
-  const { currentUser, users, setUser, notifications } = useInventory();
+  const { currentUser, users, setUser } = useInventory();
+  const { unreadCount } = useNotifications();
   const { theme, setTheme } = useTheme();
   const location = useLocation();
 
@@ -62,7 +63,7 @@ export function AppSidebar() {
     });
   };
 
-  const hasUnreadNotifications = notifications && notifications.some(n => !n.read);
+  const hasUnreadNotifications = unreadCount > 0;
 
   return (
     <Sidebar>

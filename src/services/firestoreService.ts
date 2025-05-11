@@ -50,7 +50,14 @@ const convertToFirestore = (data: any) => {
     if (result[key] instanceof Date) {
       result[key] = Timestamp.fromDate(result[key]);
     } else if (typeof result[key] === 'object' && result[key] !== null) {
-      result[key] = convertToFirestore(result[key]);
+      // Verificação especial para documentos
+      if (key === 'documents' && Array.isArray(result[key])) {
+        console.log(`Preparando ${result[key].length} documentos para salvar:`, result[key]);
+        // Certifique-se de que não há undefined nos documentos
+        result[key] = result[key].map(doc => removeUndefinedValues(doc));
+      } else {
+        result[key] = convertToFirestore(result[key]);
+      }
     }
   });
   
@@ -275,6 +282,11 @@ export const itemService = {
     try {
       const itemRef = doc(db, ITEMS_COLLECTION, id);
       const cleanData = removeUndefinedValues(data);
+      
+      // Log para depurar documentos
+      if (cleanData.documents) {
+        console.log(`Atualizando item ${id} com ${cleanData.documents.length} documentos:`, cleanData.documents);
+      }
       
       const updateData = {
         ...convertToFirestore(cleanData),

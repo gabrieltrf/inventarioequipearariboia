@@ -1,7 +1,6 @@
-
 import { useInventory } from '@/contexts/InventoryContext';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -159,7 +158,9 @@ const Movements = () => {
         setDialogOpen(open);
       }}>
         <DialogContent className="max-w-md">
-          <h2 className="text-lg font-semibold mb-4">Nova Movimentação de Estoque</h2>
+          <DialogHeader>
+            <DialogTitle>Nova Movimentação de Estoque</DialogTitle>
+          </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="item">Item</Label>

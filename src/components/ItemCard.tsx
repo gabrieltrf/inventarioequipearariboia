@@ -44,7 +44,7 @@ const ItemCard = ({ item, onEdit, onLoan, onViewDetails }: ItemCardProps) => {
               <strong>Qtd:</strong> {item.quantity} {item.unit}
             </div>
             <div className="mb-1">
-              <strong>Local:</strong> {item.location}
+              <strong>Local:</strong> {item.locationId}
             </div>
             <div className="line-clamp-2 text-muted-foreground">
               {item.description}

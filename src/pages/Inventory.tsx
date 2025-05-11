@@ -18,6 +18,7 @@ import LoanForm from '@/components/LoanForm';
 import ItemDetails from '@/components/ItemDetails';
 import { Grid3X3, Table2, Plus, Search, Filter } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const Inventory = () => {
   const { items, switchViewMode, isCardView, addItem, updateItem, addLoan, searchItems, filterItemsByStatus, currentUser, loadingItems } = useInventory();
@@ -187,13 +188,17 @@ const Inventory = () => {
         <DialogContent className="max-w-3xl">
           {dialogContent.type === 'add' && (
             <>
-              <h2 className="text-lg font-semibold mb-4">Adicionar Novo Item</h2>
+              <DialogHeader>
+                <DialogTitle>Adicionar Novo Item</DialogTitle>
+              </DialogHeader>
               <ItemForm onSubmit={handleAddOrUpdateItem} onCancel={handleDialogClose} />
             </>
           )}
           {dialogContent.type === 'edit' && dialogContent.item && (
             <>
-              <h2 className="text-lg font-semibold mb-4">Editar Item</h2>
+              <DialogHeader>
+                <DialogTitle>Editar Item</DialogTitle>
+              </DialogHeader>
               <ItemForm 
                 initialItem={dialogContent.item} 
                 onSubmit={handleAddOrUpdateItem} 
@@ -203,7 +208,9 @@ const Inventory = () => {
           )}
           {dialogContent.type === 'loan' && dialogContent.item && (
             <>
-              <h2 className="text-lg font-semibold mb-4">Registrar Empréstimo</h2>
+              <DialogHeader>
+                <DialogTitle>Registrar Empréstimo</DialogTitle>
+              </DialogHeader>
               <LoanForm 
                 item={dialogContent.item} 
                 onSubmit={handleAddLoan} 

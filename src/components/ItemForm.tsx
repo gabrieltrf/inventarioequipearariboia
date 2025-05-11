@@ -7,7 +7,8 @@ import { Item, ItemCategory, ItemStatus } from '@/types';
 import { useState, useEffect } from 'react';
 import { useInventory } from '@/contexts/InventoryContext';
 import { toast } from 'sonner';
-import { FileIcon, Upload, X } from 'lucide-react';
+import { FileIcon, Upload, X, Loader2 } from 'lucide-react';
+import { storageService } from '@/services/storageService';
 
 interface ItemFormProps {
   initialItem?: Item;
@@ -35,8 +36,8 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<{ name: string, url: string, type: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
   
-  // Processar arquivos iniciais se existirem
   useEffect(() => {
     if (initialItem?.documents?.length) {
       setPreviews(initialItem.documents.map(doc => ({
@@ -49,7 +50,6 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
 
   const handleChange = (field: string, value: string | number | any[]) => {
     setForm(prev => ({ ...prev, [field]: value }));
-    // Limpar erro do campo quando for alterado
     if (errors[field]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -65,16 +65,13 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
       const fileArray = Array.from(files);
       setSelectedFiles(prev => [...prev, ...fileArray]);
       
-      // Criar previews para os arquivos
       fileArray.forEach(file => {
-        // Determinar tipo de arquivo (imagem, pdf, outros)
         const fileType = file.type.split('/')[0] === 'image' 
           ? 'image' 
           : file.type === 'application/pdf' 
             ? 'pdf' 
             : 'document';
         
-        // Criar URL para preview se for imagem
         let previewUrl = '';
         if (fileType === 'image') {
           previewUrl = URL.createObjectURL(file);
@@ -94,7 +91,6 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
     newPreviews.splice(index, 1);
     setPreviews(newPreviews);
     
-    // Se for um arquivo recentemente selecionado, remova-o também
     if (index < selectedFiles.length) {
       const newSelectedFiles = [...selectedFiles];
       newSelectedFiles.splice(index, 1);
@@ -117,7 +113,7 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
@@ -135,41 +131,47 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
       return;
     }
 
-    // Em um cenário real, aqui faríamos upload dos arquivos para um servidor e obteríamos as URLs
-    // Para este exemplo, vamos simular URLs para os arquivos selecionados
-    const newDocuments = selectedFiles.map((file, index) => {
-      const fileType = file.type.split('/')[0] === 'image' 
-        ? 'image' 
-        : file.type === 'application/pdf' 
-          ? 'pdf' 
-          : 'document';
+    try {
+      setUploading(true);
       
-      return {
-        id: `new-doc-${index}`,
-        name: file.name,
-        url: `mock-url-${file.name}`, // Em um cenário real, esta seria a URL do servidor
-        type: fileType,
-        size: file.size,
-        uploadDate: new Date()
-      };
-    });
+      // Identificar qual ID usar para o item (existente ou temporário para um novo item)
+      const itemId = initialItem?.id || 'temp-' + new Date().getTime();
+      
+      // Upload de todos os novos arquivos selecionados para o Firebase Storage
+      const uploadPromises = selectedFiles.map(file => 
+        storageService.uploadItemFile(file, itemId)
+      );
+      
+      // Aguardar todos os uploads terminarem
+      const uploadedDocuments = await Promise.all(uploadPromises);
+      
+      // Combinar documentos existentes (que não foram removidos) com novos documentos
+      const existingDocumentsKept = (initialItem?.documents || [])
+        .filter(doc => previews.some(p => p.name === doc.name && 
+                                        !selectedFiles.some(f => f.name === doc.name)));
+      
+      const documentsList = [...existingDocumentsKept, ...uploadedDocuments];
 
-    // Combinar documentos existentes (se estiver editando) com novos documentos
-    const documentsList = [...(initialItem?.documents || []), ...newDocuments]
-      .filter(doc => previews.some(p => p.name === doc.name)); // Manter apenas os que não foram removidos
-
-    onSubmit({
-      name: form.name,
-      description: form.description,
-      category: selectedCategory,
-      quantity: Number(form.quantity),
-      minQuantity: Number(form.minQuantity),
-      unit: form.unit,
-      locationId: selectedLocation?.id,
-      status: form.status,
-      imageUrl: form.imageUrl,
-      documents: documentsList
-    });
+      onSubmit({
+        name: form.name,
+        description: form.description,
+        category: selectedCategory,
+        quantity: Number(form.quantity),
+        minQuantity: Number(form.minQuantity),
+        unit: form.unit,
+        locationId: selectedLocation?.id,
+        status: form.status,
+        imageUrl: form.imageUrl,
+        documents: documentsList
+      });
+      
+      toast.success("Arquivos enviados com sucesso!");
+    } catch (error) {
+      console.error("Erro ao fazer upload dos arquivos:", error);
+      toast.error("Erro ao enviar arquivos. Por favor, tente novamente.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -371,8 +373,15 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="submit">
-          {initialItem ? 'Atualizar' : 'Cadastrar'} Item
+        <Button type="submit" disabled={uploading}>
+          {uploading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Enviando...
+            </>
+          ) : (
+            <>{initialItem ? 'Atualizar' : 'Cadastrar'} Item</>
+          )}
         </Button>
       </div>
     </form>

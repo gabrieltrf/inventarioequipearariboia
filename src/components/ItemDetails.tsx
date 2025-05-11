@@ -5,7 +5,9 @@ import { format, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, ArrowUp, ArrowDown, User, Clock } from 'lucide-react';
+import { Calendar, ArrowUp, ArrowDown, User, Clock, FileText, ExternalLink, File, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface ItemDetailsProps {
   item: Item;
@@ -47,11 +49,85 @@ const ItemDetails = ({ item, onClose }: ItemDetailsProps) => {
     }
   };
 
+  // Função para abrir um documento com tratamento de erro
+  const openDocument = (url: string) => {
+    try {
+      const newWindow = window.open(url, '_blank');
+      
+      // Verifica se o popup foi bloqueado pelo navegador
+      if (newWindow === null || typeof newWindow === 'undefined') {
+        toast("Documento bloqueado", {
+          description: "O navegador bloqueou a abertura do documento. Por favor, permita popups para este site."
+        });
+      }
+    } catch (error) {
+      console.error("Error opening document:", error);
+      toast("Erro ao abrir documento", {
+        description: "Não foi possível abrir o documento. Verifique a URL ou tente novamente mais tarde."
+      });
+    }
+  };
+
+  // Adiciona logs mais detalhados para diagnóstico
+  console.log("Item recebido completo:", item);
+  console.log("Item ID:", item?.id);
+  console.log("Item tem documentos?", Boolean(item?.documents));
+  
+  // Se documentos existir, mostra sua estrutura
+  if (item.documents) {
+    console.log("Tipo de documentos:", typeof item.documents);
+    console.log("É array?", Array.isArray(item.documents));
+    console.log("Comprimento:", item.documents.length);
+    
+    // Se for um objeto, talvez seja um objeto do Firebase que precisa ser convertido
+    if (!Array.isArray(item.documents) && typeof item.documents === 'object') {
+      console.log("Documentos como objeto:", item.documents);
+    }
+  }
+
+  // Função utilitária para converter documentos em formato utilizável
+  const normalizeDocuments = () => {
+    // Se não existem documentos, retorna array vazio
+    if (!item.documents) return [];
+    
+    // Se já é array, usa diretamente
+    if (Array.isArray(item.documents)) return item.documents;
+    
+    // Se é objeto, converte para array (caso do Firestore)
+    if (typeof item.documents === 'object') {
+      try {
+        // Tenta converter objeto em array de documents
+        return Object.keys(item.documents).map(key => {
+          const doc = item.documents[key];
+          return {
+            id: key,
+            ...doc
+          };
+        });
+      } catch (err) {
+        console.error("Erro ao normalizar documentos:", err);
+        return [];
+      }
+    }
+    
+    return [];
+  };
+  
+  // Normaliza os documentos
+  const normalizedDocs = normalizeDocuments();
+  console.log("Documentos normalizados:", normalizedDocs);
+  
+  // Verifica se há documentos válidos após normalização
+  const hasDocuments = normalizedDocs.length > 0;
+
   return (
     <div className="space-y-4">
+      <DialogHeader>
+        <DialogTitle className="text-2xl font-bold">{item.name}</DialogTitle>
+      </DialogHeader>
+      
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold">{item.name}</h2>
           <div className="flex items-center gap-2 mt-1">
             <div className="text-sm text-muted-foreground">ID: {item.id}</div>
             <StatusBadge status={item.status} />
@@ -85,9 +161,10 @@ const ItemDetails = ({ item, onClose }: ItemDetailsProps) => {
 
       <div className="pt-4">
         <Tabs defaultValue="loans">
-          <TabsList className="w-full grid grid-cols-2">
+          <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="loans">Empréstimos</TabsTrigger>
             <TabsTrigger value="movements">Movimentações</TabsTrigger>
+            <TabsTrigger value="documents">Documentos</TabsTrigger>
           </TabsList>
           <TabsContent value="loans" className="space-y-4 pt-4">
             {activeLoans.length > 0 && (
@@ -186,6 +263,91 @@ const ItemDetails = ({ item, onClose }: ItemDetailsProps) => {
             ) : (
               <div className="text-center py-6 text-muted-foreground">
                 Sem registros de movimentações para este item.
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="documents" className="space-y-4 pt-4">
+            {hasDocuments ? (
+              <div className="bg-slate-50 rounded-md p-3 space-y-3">
+                <h3 className="font-medium flex items-center gap-1">
+                  <FileText className="h-4 w-4" />
+                  Documentos do item ({normalizedDocs.length})
+                </h3>
+                <div className="space-y-2">
+                  {normalizedDocs.map((doc, index) => {
+                    console.log(`Documento ${index}:`, doc);
+                    
+                    // Usar uma versão simplificada para garantir que pelo menos algo seja exibido
+                    const docName = doc.name || doc.fileName || doc.title || `Documento ${index + 1}`;
+                    const docUrl = doc.url || doc.fileUrl || doc.downloadUrl || doc.path || '';
+                    
+                    return (
+                      <div 
+                        key={doc.id || `doc-${index}`} 
+                        className="flex justify-between items-center border-b border-slate-200 pb-2 last:border-0 last:pb-0"
+                      >
+                        <div className="flex items-center gap-2">
+                          <File className="h-5 w-5 text-blue-600" />
+                          <div>
+                            <div className="font-medium">{docName}</div>
+                            {doc.size && (
+                              <div className="text-xs text-muted-foreground">
+                                Tamanho: {Math.round(doc.size / 1024)} KB
+                              </div>
+                            )}
+                            {doc.uploadDate && (
+                              <div className="text-xs text-muted-foreground">
+                                Enviado em: {formatDate(doc.uploadDate)}
+                              </div>
+                            )}
+                            {doc.type && (
+                              <div className="text-xs text-muted-foreground">
+                                Tipo: {doc.type}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {docUrl ? (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-blue-600"
+                            onClick={() => openDocument(docUrl)}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            Abrir
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            disabled
+                            className="text-muted-foreground"
+                          >
+                            Indisponível
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-6 text-muted-foreground">
+                <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                <p>Nenhum documento cadastrado para este item.</p>
+                <p className="text-xs mt-2">
+                  Verifique o console do navegador para mais detalhes (F12).
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => console.log("Item com documentos:", item)}
+                >
+                  Diagnosticar Problema
+                </Button>
               </div>
             )}
           </TabsContent>

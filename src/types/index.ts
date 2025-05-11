@@ -54,6 +54,10 @@ export interface ItemDocument {
   type: string; // 'image', 'pdf', 'document'
   size?: number; // in bytes
   uploadDate?: Date;
+  fileName?: string;
+  fileUrl?: string;
+  downloadUrl?: string;
+  path?: string;
 }
 
 export interface Item {

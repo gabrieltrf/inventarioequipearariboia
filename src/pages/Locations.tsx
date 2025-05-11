@@ -277,14 +277,16 @@ const Locations = () => {
       
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
-          <DialogTitle>
-            {selectedLocation ? 'Editar localização' : 'Nova localização'}
-          </DialogTitle>
-          <DialogDescription>
-            {selectedLocation 
-              ? 'Atualize os dados da localização abaixo.' 
-              : 'Preencha os dados para adicionar uma nova localização.'}
-          </DialogDescription>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedLocation ? 'Editar localização' : 'Nova localização'}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedLocation 
+                ? 'Atualize os dados da localização abaixo.' 
+                : 'Preencha os dados para adicionar uma nova localização.'}
+            </DialogDescription>
+          </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nome</Label>
@@ -352,10 +354,12 @@ const Locations = () => {
       
       <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
         <DialogContent>
-          <DialogTitle>Confirmar exclusão</DialogTitle>
-          <DialogDescription>
-            Esta ação não poderá ser desfeita.
-          </DialogDescription>
+          <DialogHeader>
+            <DialogTitle>Confirmar exclusão</DialogTitle>
+            <DialogDescription>
+              Esta ação não poderá ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
           <p>
             Tem certeza que deseja excluir a localização <strong>{selectedLocation?.name}</strong>?
           </p>

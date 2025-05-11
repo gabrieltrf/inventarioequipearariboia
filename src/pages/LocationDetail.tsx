@@ -28,7 +28,7 @@ import {
   Edit,
   AlertTriangle
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import StatusBadge from '@/components/StatusBadge';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +44,32 @@ const LocationDetail = () => {
   );
   const [items, setItems] = useState<Item[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Helper function to safely format dates
+  const formatDate = (date: any): string => {
+    // Check if date is null or undefined
+    if (!date) return 'N/A';
+    
+    // If it's a Firebase Timestamp (has toDate method)
+    if (date && typeof date === 'object' && 'toDate' in date && typeof date.toDate === 'function') {
+      try {
+        return format(date.toDate(), 'dd/MM/yyyy', { locale: ptBR });
+      } catch (error) {
+        console.error("Error converting timestamp:", error);
+        return 'Data inválida';
+      }
+    }
+    
+    // If it's already a JavaScript Date object
+    try {
+      return isValid(new Date(date)) 
+        ? format(new Date(date), 'dd/MM/yyyy', { locale: ptBR }) 
+        : 'Data inválida';
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return 'Data inválida';
+    }
+  };
   
   useEffect(() => {
     if (locationId) {
@@ -154,7 +180,7 @@ const LocationDetail = () => {
                 <h3 className="text-sm font-medium mb-1">Data de cadastro</h3>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>{format(location.createdAt, 'dd/MM/yyyy', { locale: ptBR })}</span>
+                  <span>{formatDate(location.createdAt)}</span>
                 </div>
               </div>
               
@@ -162,7 +188,7 @@ const LocationDetail = () => {
                 <h3 className="text-sm font-medium mb-1">Última atualização</h3>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>{format(location.updatedAt, 'dd/MM/yyyy', { locale: ptBR })}</span>
+                  <span>{formatDate(location.updatedAt)}</span>
                 </div>
               </div>
               

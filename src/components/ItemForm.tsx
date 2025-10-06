@@ -3,11 +3,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Item, ItemCategory, ItemStatus } from '@/types';
+import { Item, ItemCategory, ItemStatus, ItemDocument } from '@/types';
 import { useState, useEffect } from 'react';
 import { useInventory } from '@/contexts/InventoryContext';
 import { toast } from 'sonner';
-import { FileIcon, Upload, X, Loader2 } from 'lucide-react';
+import { FileIcon, Upload, X, Loader2, ImageIcon, Image } from 'lucide-react';
 import { storageService } from '@/services/storageService';
 
 interface ItemFormProps {
@@ -17,6 +17,20 @@ interface ItemFormProps {
 }
 
 const statusOptions = Object.values(ItemStatus);
+
+// Helper function to normalize documents
+const normalizeItemDocuments = (docs: any): ItemDocument[] => {
+  if (!docs) return [];
+  if (Array.isArray(docs)) return docs as ItemDocument[];
+  if (typeof docs === 'object' && docs !== null) {
+    return Object.values(docs).filter(
+      (doc): doc is ItemDocument =>
+        typeof doc === 'object' && doc !== null &&
+        'id' in doc && 'name' in doc && 'url' in doc && 'type' in doc
+    );
+  }
+  return [];
+};
 
 const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
   const { categories, locations } = useInventory();
@@ -30,7 +44,7 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
     locationId: initialItem?.locationId || locations[0]?.id || '',
     status: initialItem?.status || ItemStatus.AVAILABLE,
     imageUrl: initialItem?.imageUrl || '',
-    documents: initialItem?.documents || []
+    documents: normalizeItemDocuments(initialItem?.documents)
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -38,15 +52,41 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
   const [previews, setPreviews] = useState<{ name: string, url: string, type: string }[]>([]);
   const [uploading, setUploading] = useState(false);
   
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(initialItem?.imageUrl || null);
+  
   useEffect(() => {
-    if (initialItem?.documents?.length) {
-      setPreviews(initialItem.documents.map(doc => ({
+    const initialDocsArray = normalizeItemDocuments(initialItem?.documents);
+    if (initialDocsArray.length > 0) {
+      setPreviews(initialDocsArray.map(doc => ({
         name: doc.name,
         url: doc.url,
         type: doc.type
       })));
+    } else {
+      setPreviews([]);
     }
-  }, [initialItem]);
+    // Update form state if initialItem changes
+    if (initialItem) {
+        setForm(prev => ({
+            ...prev,
+            name: initialItem.name || '',
+            description: initialItem.description || '',
+            categoryId: initialItem.category.id || categories[0]?.id || '',
+            quantity: initialItem.quantity || 0,
+            minQuantity: initialItem.minQuantity || 0,
+            unit: initialItem.unit || 'unidade',
+            locationId: initialItem.locationId || locations[0]?.id || '',
+            status: initialItem.status || ItemStatus.AVAILABLE,
+            imageUrl: initialItem.imageUrl || '',
+            documents: normalizeItemDocuments(initialItem.documents)
+        }));
+        setImagePreview(initialItem.imageUrl || null);
+    } else {
+        // Reset form if initialItem is not provided (e.g. for add new)
+        // (This part might need adjustment based on how ItemForm is re-used for add/edit)
+    }
+  }, [initialItem, categories, locations]); // Added categories and locations to dependencies
 
   const handleChange = (field: string, value: string | number | any[]) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -84,6 +124,37 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
         }]);
       });
     }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error("Por favor, selecione uma imagem válida.");
+        return;
+      }
+      
+      setSelectedImage(file);
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+      
+      if (errors.imageUrl) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.imageUrl;
+          return newErrors;
+        });
+      }
+    }
+  };
+
+  const removeSelectedImage = () => {
+    setSelectedImage(null);
+    if (imagePreview && !initialItem?.imageUrl) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImagePreview(null);
   };
 
   const removeFile = (index: number) => {
@@ -134,21 +205,29 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
     try {
       setUploading(true);
       
-      // Identificar qual ID usar para o item (existente ou temporário para um novo item)
       const itemId = initialItem?.id || 'temp-' + new Date().getTime();
       
-      // Upload de todos os novos arquivos selecionados para o Firebase Storage
+      let currentImageUrl = form.imageUrl; // Start with the current form value
+      if (selectedImage) { // If a new image is selected for upload
+        const uploadedImage = await storageService.uploadItemFile(selectedImage, `${itemId}/main`);
+        currentImageUrl = uploadedImage.url;
+      } else if (initialItem?.imageUrl && !imagePreview) { // If existing image was removed (imagePreview is null)
+        // TODO: Optionally delete initialItem.imageUrl from storage
+        currentImageUrl = '';
+      }
+      // If no new image selected and existing image not removed, currentImageUrl remains as initialItem.imageUrl (via form.imageUrl)
+      
       const uploadPromises = selectedFiles.map(file => 
         storageService.uploadItemFile(file, itemId)
       );
       
-      // Aguardar todos os uploads terminarem
       const uploadedDocuments = await Promise.all(uploadPromises);
       
-      // Combinar documentos existentes (que não foram removidos) com novos documentos
-      const existingDocumentsKept = (initialItem?.documents || [])
-        .filter(doc => previews.some(p => p.name === doc.name && 
-                                        !selectedFiles.some(f => f.name === doc.name)));
+      const initialDocsAsArray = normalizeItemDocuments(initialItem?.documents);
+      const existingDocumentsKept = initialDocsAsArray.filter(doc => 
+        previews.some(p => p.name === doc.name && p.url === doc.url) && // Check if still in previews (by name and URL)
+        !selectedFiles.some(f => f.name === doc.name) // And not re-uploaded
+      );
       
       const documentsList = [...existingDocumentsKept, ...uploadedDocuments];
 
@@ -161,7 +240,7 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
         unit: form.unit,
         locationId: selectedLocation?.id,
         status: form.status,
-        imageUrl: form.imageUrl,
+        imageUrl: currentImageUrl,
         documents: documentsList
       });
       
@@ -289,7 +368,69 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
           {errors.description && <p className="text-destructive text-sm">{errors.description}</p>}
         </div>
 
-        {/* Nova seção para upload de documentos */}
+        <div className="space-y-4 md:col-span-2 border rounded-md p-4">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="main-image">Foto do Item</Label>
+            <div className="text-xs text-muted-foreground">
+              Adicione uma imagem principal para representar o item
+            </div>
+          </div>
+
+          <div className="flex items-start gap-4">
+            <div className="border rounded-md overflow-hidden flex-shrink-0" style={{ width: '150px', height: '150px' }}>
+              {imagePreview ? (
+                <div className="relative h-full">
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    className="h-full w-full object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6"
+                    onClick={removeSelectedImage}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="h-full w-full flex items-center justify-center bg-muted">
+                  <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+            
+            <div className="flex-grow">
+              <div className="border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center text-center">
+                <Image className="h-8 w-8 text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground mb-2">
+                  Selecione uma imagem para o item
+                </p>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => document.getElementById('item-image')?.click()}
+                >
+                  Escolher Imagem
+                </Button>
+                <Input
+                  id="item-image"
+                  type="file"
+                  className="hidden"
+                  onChange={handleImageChange}
+                  accept="image/*"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  PNG, JPG ou JPEG (máx. 5MB)
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-4 md:col-span-2 border rounded-md p-4">
           <div className="flex items-center justify-between">
             <Label htmlFor="documents">Documentos</Label>
@@ -321,7 +462,6 @@ const ItemForm = ({ initialItem, onSubmit, onCancel }: ItemFormProps) => {
             />
           </div>
 
-          {/* Previews dos arquivos */}
           {previews.length > 0 && (
             <div className="mt-4 space-y-2">
               <Label>Arquivos selecionados ({previews.length})</Label>

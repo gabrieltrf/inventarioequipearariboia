@@ -6,6 +6,12 @@ import { Edit, PackageOpen, ArrowRight, Trash2 } from 'lucide-react';
 import { useInventory } from '@/contexts/InventoryContext';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface ItemTableProps {
   items: Item[];
@@ -73,7 +79,40 @@ const ItemTable = ({ items, onEdit, onLoan, onViewDetails, loading = false }: It
               items.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.id}</TableCell>
-                  <TableCell>{item.name}</TableCell>
+                  <TableCell>
+                    {item.imageUrl ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-pointer hover:underline">{item.name}</span>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="p-0 bg-transparent border-0" sideOffset={40}>
+                            <div className="bg-white p-1 rounded-md shadow-lg border">
+                              <div className="relative" style={{ width: '200px', height: '150px' }}>
+                                <img 
+                                  src={item.imageUrl} 
+                                  alt={item.name}
+                                  className="w-full h-full object-contain"
+                                  onError={(e) => {
+                                    e.currentTarget.src = '';
+                                    e.currentTarget.style.display = 'none';
+                                    e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-slate-100"><span class="text-xs text-slate-400">Imagem indisponível</span></div>';
+                                  }}
+                                />
+                              </div>
+                              <div className="text-center text-xs py-1 text-slate-600">
+                                {item.name}
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <span className="flex items-center gap-1">
+                        {item.name}
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell>{item.category.name}</TableCell>
                   <TableCell className="text-center">{item.quantity} {item.unit}</TableCell>
                   <TableCell>{getLocationName(item.locationId)}</TableCell>

@@ -1,9 +1,8 @@
-
 import { Item } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import StatusBadge from './StatusBadge';
-import { Edit, Trash2, PackageOpen, ArrowRight } from 'lucide-react';
+import { Edit, Trash2, PackageOpen, ArrowRight, ImageIcon } from 'lucide-react';
 import { useInventory } from '@/contexts/InventoryContext';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -29,6 +28,26 @@ const ItemCard = ({ item, onEdit, onLoan, onViewDetails }: ItemCardProps) => {
   return (
     <>
       <Card className="h-full flex flex-col">
+        {/* Adiciona imagem se disponível */}
+        {item.imageUrl && (
+          <div className="relative w-full h-32 bg-slate-100">
+            <img 
+              src={item.imageUrl} 
+              alt={item.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = '';
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          </div>
+        )}
+        {!item.imageUrl && (
+          <div className="w-full h-20 bg-slate-100 flex items-center justify-center">
+            <ImageIcon className="h-8 w-8 text-slate-300" />
+          </div>
+        )}
+        
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
             <CardTitle className="text-lg font-medium">{item.name}</CardTitle>

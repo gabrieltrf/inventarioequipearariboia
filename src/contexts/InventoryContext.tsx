@@ -21,6 +21,7 @@ import {
 import { toast } from 'sonner';
 import { Notification } from './InventoryContextExtension';
 import { locationService, itemService } from '@/services/firestoreService';
+import { storageService } from '@/services/storageService';
 
 interface InventoryContextType {
   items: Item[];
@@ -109,6 +110,30 @@ export const InventoryProvider: React.FC<{children: React.ReactNode}> = ({ child
 
   const updateItem = async (id: string, data: Partial<Item>): Promise<void> => {
     try {
+      const itemToUpdate = items.find(i => i.id === id);
+      const oldImageUrl = itemToUpdate?.imageUrl;
+
+      // Se a imagem foi removida (imageUrl ficou vazia) e existia uma imagem antiga
+      if (data.imageUrl === '' && oldImageUrl) {
+        try {
+          await storageService.deleteFileByUrl(oldImageUrl);
+          console.log(`Imagem antiga ${oldImageUrl} do item ${id} excluída do Storage.`);
+        } catch (storageError) {
+          console.error("Erro ao excluir imagem antiga do Storage (imagem removida):", storageError);
+          // Não interromper a atualização do item por falha na exclusão da imagem antiga
+        }
+      }
+      // Se uma nova imagem foi definida e é diferente da antiga (e existia uma antiga)
+      else if (data.imageUrl && data.imageUrl !== oldImageUrl && oldImageUrl) {
+        try {
+          await storageService.deleteFileByUrl(oldImageUrl);
+          console.log(`Imagem antiga ${oldImageUrl} do item ${id} substituída e excluída do Storage.`);
+        } catch (storageError) {
+          console.error("Erro ao excluir imagem antiga do Storage (imagem substituída):", storageError);
+          // Não interromper a atualização do item por falha na exclusão da imagem antiga
+        }
+      }
+
       await itemService.update(id, data);
       toast.success('Item atualizado com sucesso!');
       await refreshItems();
@@ -130,6 +155,17 @@ export const InventoryProvider: React.FC<{children: React.ReactNode}> = ({ child
     
     try {
       const item = items.find(i => i.id === id);
+      
+      // Primeiro exclui os arquivos do Storage
+      try {
+        await storageService.deleteItemFolder(id);
+        console.log(`Arquivos do item ${id} excluídos do Storage`);
+      } catch (storageError) {
+        console.error("Erro ao excluir arquivos do Storage:", storageError);
+        // Continua mesmo com erro no storage para garantir que pelo menos o item seja excluído
+      }
+      
+      // Depois exclui o item do Firestore
       await itemService.delete(id);
       await refreshItems();
       

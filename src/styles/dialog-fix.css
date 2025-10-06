@@ -1,0 +1,13 @@
+/* Estilos para corrigir scrolling em diálogos */
+.dialog-content-scrollable {
+  max-height: 85vh !important;
+  overflow-y: auto !important;
+}
+
+/* Ajustes para mobile */
+@media (max-width: 640px) {
+  .dialog-content-scrollable {
+    max-height: 80vh !important;
+    padding: 16px !important;
+  }
+}

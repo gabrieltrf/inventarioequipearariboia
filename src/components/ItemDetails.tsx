@@ -140,6 +140,17 @@ const ItemDetails = ({ item, onClose }: ItemDetailsProps) => {
         </div>
       </div>
 
+      {/* Exibir imagem do item se disponível */}
+      {item.imageUrl && (
+        <div className="relative rounded-md overflow-hidden" style={{ maxHeight: "200px" }}>
+          <img 
+            src={item.imageUrl} 
+            alt={item.name}
+            className="w-full h-full object-contain bg-slate-50" 
+          />
+        </div>
+      )}
+
       <div className="bg-slate-50 p-3 rounded-md">
         <h3 className="text-sm font-medium mb-1">Descrição</h3>
         <p>{item.description}</p>

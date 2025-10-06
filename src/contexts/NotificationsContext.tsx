@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useInventory } from './InventoryContext';
 import { Notification } from './InventoryContextExtension';
@@ -9,6 +8,7 @@ export interface NotificationsContextType {
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   addNotification: (notification: Omit<Notification, 'id' | 'date' | 'read'>) => void;
+  removeNotificationsByTypeAndItemId: (type: string, itemId: string) => void;
 }
 
 const NotificationsContext = createContext<NotificationsContextType | null>(null);
@@ -48,7 +48,16 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     setNotifications(prev => [newNotification, ...prev]);
   };
 
-  // Verificar empréstimos vencidos
+  // Nova função para remover notificações por tipo e itemId
+  const removeNotificationsByTypeAndItemId = (type: string, itemId: string) => {
+    setNotifications(prev => 
+      prev.filter(notification => 
+        !(notification.type === type && notification.itemId === itemId)
+      )
+    );
+  };
+
+  // Verificar empréstimos vencidos e níveis de estoque
   useEffect(() => {
     const today = new Date();
     
@@ -75,6 +84,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     
     // Verificar níveis baixos de estoque
     items.forEach(item => {
+      // Verificar se o item está com estoque baixo
       if (item.quantity <= item.minQuantity) {
         // Verificar se já existe notificação para este item
         const notificationExists = notifications.some(
@@ -91,9 +101,18 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             actionLink: '/'
           });
         }
+      } else {
+        // Se o item NÃO está com estoque baixo, remover notificações relacionadas
+        const hasNotification = notifications.some(
+          n => n.type === 'estoque_baixo' && n.itemId === item.id
+        );
+        
+        if (hasNotification) {
+          removeNotificationsByTypeAndItemId('estoque_baixo', item.id);
+        }
       }
     });
-  }, [items, loans]);
+  }, [items, loans, notifications]);
 
   // Adiciona algumas notificações de exemplo na primeira renderização
   useEffect(() => {
@@ -120,7 +139,8 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     unreadCount,
     markAsRead,
     markAllAsRead,
-    addNotification
+    addNotification,
+    removeNotificationsByTypeAndItemId
   };
 
   return (

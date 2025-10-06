@@ -6,12 +6,12 @@ import { enableIndexedDbPersistence } from "firebase/firestore";
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCB003CBHpyZLzoQIK9smNbe1_5Krap9t0",
-  authDomain: "arariinventario.firebaseapp.com",
-  projectId: "arariinventario",
-  storageBucket: "arariinventario.firebasestorage.app", // Correção no storageBucket
-  messagingSenderId: "760406378525",
-  appId: "1:760406378525:web:5ce4987c9b38d213a89ef4"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase
